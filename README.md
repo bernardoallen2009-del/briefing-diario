@@ -1,83 +1,57 @@
-# 📰 Briefing Diário — 100% Gratuito
+# Briefing Diário
 
-Resumo diário de mercados, geopolítica e tecnologia.  
-Funciona com **NewsAPI** (notícias reais) + **Groq** (IA gratuita e rápida, Llama 4).
+Resumo diário de mercados, geopolítica, política e tecnologia em português europeu.
 
----
+O projeto usa:
 
-## 🔑 Passo 1 — Obter as chaves gratuitas (5 min)
+- Next.js para a interface e API route.
+- NewsAPI para recolher notícias recentes.
+- Groq para sintetizar o briefing.
 
-### Groq (IA gratuita)
-1. Vai a https://console.groq.com
-2. Cria conta (gratuito, sem cartão)
-3. Clica em **API Keys → Create API Key**
-4. Copia a chave (começa com `gsk_...`)
+## Configuração
 
-### NewsAPI (notícias em tempo real)
-1. Vai a https://newsapi.org/register
-2. Cria conta gratuita
-3. Copia a chave da dashboard
+Cria um ficheiro `.env.local` com:
 
----
-
-## ⚙️ Passo 2 — Configurar o projeto
-
-Abre o ficheiro `.env.local` e preenche:
-
-```
+```bash
 GROQ_API_KEY=gsk_COLOCA_AQUI
 NEWSAPI_KEY=COLOCA_AQUI
 ```
 
----
-
-## 💻 Passo 3 — Correr localmente
+## Desenvolvimento
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abre http://localhost:3000 ✅
+Depois abre `http://localhost:3000`.
 
----
+## Deploy no Vercel
 
-## 🚀 Passo 4 — Deploy no Vercel (gratuito)
+Adiciona as mesmas variáveis no Vercel em `Settings > Environment Variables`:
+
+- `GROQ_API_KEY`
+- `NEWSAPI_KEY`
+
+Depois faz deploy normalmente com a integração GitHub ou com:
 
 ```bash
-npm i -g vercel
-vercel
+vercel --prod
 ```
 
-No dashboard do Vercel → **Settings → Environment Variables** → adiciona:
-- `GROQ_API_KEY` → a tua chave Groq
-- `NEWSAPI_KEY` → a tua chave NewsAPI
+## Instalar no iPhone
 
-Depois: `vercel --prod`
+Depois do deploy em HTTPS, abre o site no Safari e escolhe `Partilhar > Adicionar ao ecrã principal`.
 
----
+O projeto inclui manifest, ícones Apple e modo `standalone`, por isso o atalho abre como app, sem a barra do Safari. Se já tinhas adicionado o site antes desta alteração, remove esse atalho antigo e adiciona novamente.
 
-## 📊 Limites gratuitos
+## Estrutura
 
-| Serviço | Limite gratuito |
-|---------|----------------|
-| Groq    | 14.400 req/dia (mais do que suficiente) |
-| NewsAPI | 100 req/dia (plano Developer) |
-| Vercel  | Ilimitado para projetos pessoais |
-
----
-
-## 📁 Estrutura
-
-```
-briefing-diario/
-├── pages/
-│   ├── api/briefing.js   ← busca NewsAPI + resume com Groq
-│   ├── _app.js
-│   └── index.js          ← interface
-├── styles/globals.css
-├── .env.local            ← as tuas chaves (não fazer commit!)
-├── .gitignore
-├── next.config.js
-└── package.json
+```text
+pages/
+  api/briefing.js  API que recolhe notícias e gera o briefing
+  _app.js
+  index.js         Interface principal
+styles/
+  globals.css      Estilos globais e layout responsivo
 ```
