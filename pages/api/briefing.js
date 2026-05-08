@@ -153,11 +153,11 @@ async function fetchAllSources() {
     });
   });
 
-  return articles.slice(0, 60);
+  return articles.slice(0, 120);
 }
 
 function normalizeBriefing(parsed, articles) {
-  const fallbackCards = articles.slice(0, 12).map((article) => ({
+  const fallbackCards = articles.map((article) => ({
     headline: article.title,
     summary: article.description || "Notícia relevante para acompanhar ao longo do dia.",
     source: article.source,
@@ -165,9 +165,7 @@ function normalizeBriefing(parsed, articles) {
     tag: classifyTag(`${article.title} ${article.description}`),
   }));
 
-  const sourceCards = parsed.cards?.length ? parsed.cards : [];
-  const cards = Array.from({ length: 12 }, (_, index) => sourceCards[index] || fallbackCards[index] || fallbackCards[index % fallbackCards.length] || {}).map((card, index) => {
-    const fallback = fallbackCards[index] || fallbackCards[0] || {};
+  const normalizeCard = (card, fallback = {}) => {
     const text = `${card.headline || fallback.headline} ${card.summary || fallback.summary}`;
 
     return {
@@ -177,7 +175,33 @@ function normalizeBriefing(parsed, articles) {
       url: card.url || fallback.url || "",
       tag: VALID_TAGS.has(card.tag) ? card.tag : classifyTag(text),
     };
-  });
+  };
+
+  const makeList = (sourceCards = [], tag = null) => {
+    const taggedFallbacks = tag
+      ? fallbackCards.filter((card) => card.tag === tag)
+      : fallbackCards;
+    const fallbackPool = taggedFallbacks.length ? taggedFallbacks : fallbackCards;
+
+    return Array.from(
+      { length: 12 },
+      (_, index) => sourceCards[index] || fallbackPool[index] || fallbackPool[index % fallbackPool.length] || {}
+    ).map((card, index) => {
+      const fallback = fallbackPool[index] || fallbackPool[index % fallbackPool.length] || {};
+      const normalized = normalizeCard(card, fallback);
+      return tag ? { ...normalized, tag } : normalized;
+    });
+  };
+
+  const topicCards = {
+    financial: makeList(parsed.topicCards?.financial, "financial"),
+    markets: makeList(parsed.topicCards?.markets, "markets"),
+    geo: makeList(parsed.topicCards?.geo, "geo"),
+    politics: makeList(parsed.topicCards?.politics, "politics"),
+    tech: makeList(parsed.topicCards?.tech, "tech"),
+  };
+
+  const cards = makeList(parsed.cards || parsed.allCards);
 
   return {
     hero: {
@@ -186,6 +210,7 @@ function normalizeBriefing(parsed, articles) {
       tags: (parsed.hero?.tags || ["financial", "markets", "geo"]).filter((tag) => VALID_TAGS.has(tag)).slice(0, 4),
     },
     cards,
+    topicCards,
   };
 }
 
@@ -233,18 +258,31 @@ Responde apenas com JSON válido, sem markdown:
       "url": "URL real da lista",
       "tag": "financial|geo|markets|politics|tech"
     }
-  ]
+  ],
+  "topicCards": {
+    "financial": [],
+    "markets": [],
+    "geo": [],
+    "politics": [],
+    "tech": []
+  }
 }
 
 Regras:
-- Exactamente 12 cards.
-- Variedade máxima de fontes.
-- Inclui pelo menos uma notícia de Portugal, uma agência global, uma fonte financeira, uma fonte tecnológica e uma notícia de geopolítica.
+- "cards" deve ter exactamente 12 notícias: as 12 melhores gerais do dia para o separador Tudo.
+- Cada array em "topicCards" deve ter exactamente 12 notícias desse tema.
+- Em "topicCards.financial" inclui finanças, economia, banca, empresas e política monetária.
+- Em "topicCards.markets" inclui bolsas, obrigações, cripto, commodities e movimentos de mercado.
+- Em "topicCards.geo" inclui geopolítica, conflitos, diplomacia, sanções e segurança.
+- Em "topicCards.politics" inclui política, eleições, governos, parlamentos e regulação.
+- Em "topicCards.tech" inclui tecnologia, IA, semicondutores, ciência aplicada e plataformas digitais.
+- Variedade máxima de fontes dentro de cada lista.
+- Inclui fontes portuguesas quando forem relevantes.
 - Não inventes factos, fontes ou URLs.`;
 
     const completion = await groq.chat.completions.create({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      max_tokens: 2600,
+      max_tokens: 8000,
       temperature: 0.12,
       messages: [{ role: "user", content: prompt }],
     });

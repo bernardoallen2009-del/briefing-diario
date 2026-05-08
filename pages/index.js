@@ -27,7 +27,7 @@ const LOAD_MESSAGES = [
   "A escrever o resumo em português europeu",
 ];
 
-const CACHE_KEY = "briefing-diario:last-result";
+const CACHE_KEY = "briefing-diario:last-result:v2";
 
 function formatDate(date) {
   return new Intl.DateTimeFormat("pt-PT", {
@@ -80,6 +80,7 @@ export default function Home() {
   const [phase, setPhase] = useState("loading");
   const [hero, setHero] = useState(null);
   const [cards, setCards] = useState([]);
+  const [topicCards, setTopicCards] = useState({});
   const [meta, setMeta] = useState(null);
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
@@ -101,6 +102,7 @@ export default function Home() {
           const parsed = JSON.parse(cached);
           setHero(parsed.hero || null);
           setCards(parsed.cards || []);
+          setTopicCards(parsed.topicCards || {});
           setMeta(parsed.meta || null);
           setUsingCache(true);
         } catch {
@@ -122,13 +124,14 @@ export default function Home() {
 
       setHero(data.hero || null);
       setCards(data.cards || []);
+      setTopicCards(data.topicCards || {});
       setMeta(nextMeta);
       setUsingCache(false);
       setPhase("done");
 
       window.localStorage.setItem(
         CACHE_KEY,
-        JSON.stringify({ hero: data.hero, cards: data.cards, meta: nextMeta })
+        JSON.stringify({ hero: data.hero, cards: data.cards, topicCards: data.topicCards, meta: nextMeta })
       );
     } catch (err) {
       const cached = typeof window !== "undefined" ? window.localStorage.getItem(CACHE_KEY) : null;
@@ -136,6 +139,7 @@ export default function Home() {
         const parsed = JSON.parse(cached);
         setHero(parsed.hero || null);
         setCards(parsed.cards || []);
+        setTopicCards(parsed.topicCards || {});
         setMeta(parsed.meta || null);
         setUsingCache(true);
         setPhase("done");
@@ -171,25 +175,24 @@ export default function Home() {
   }, [phase]);
 
   const counts = useMemo(() => {
-    return cards.reduce(
-      (acc, card) => {
-        const tag = card.tag || "financial";
-        acc.all += 1;
-        acc[tag] = (acc[tag] || 0) + 1;
-        return acc;
-      },
-      { all: 0 }
-    );
-  }, [cards]);
+    return {
+      all: cards.length,
+      financial: topicCards.financial?.length || 0,
+      markets: topicCards.markets?.length || 0,
+      geo: topicCards.geo?.length || 0,
+      politics: topicCards.politics?.length || 0,
+      tech: topicCards.tech?.length || 0,
+    };
+  }, [cards, topicCards]);
 
   const displayed = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return cards.filter((card) => {
-      const matchesTag = filter === "all" || card.tag === filter;
+    const activeCards = filter === "all" ? cards : topicCards[filter] || [];
+    return activeCards.filter((card) => {
       const haystack = `${card.headline || ""} ${card.summary || ""} ${card.source || ""}`.toLowerCase();
-      return matchesTag && (!normalizedQuery || haystack.includes(normalizedQuery));
+      return !normalizedQuery || haystack.includes(normalizedQuery);
     });
-  }, [cards, filter, query]);
+  }, [cards, filter, query, topicCards]);
 
   return (
     <>

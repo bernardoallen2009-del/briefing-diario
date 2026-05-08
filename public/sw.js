@@ -1,4 +1,4 @@
-const CACHE_NAME = "briefing-diario-v1";
+const CACHE_NAME = "briefing-diario-v2";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
